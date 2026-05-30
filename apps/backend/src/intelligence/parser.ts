@@ -4,7 +4,9 @@ export interface ParsedRelease {
   codec: "HEVC" | "AVC" | "AV1" | "unknown";
   hdr: boolean;
   dolbyVision: boolean;
-  audio: ("Atmos" | "DDP" | "DTS" | "5.1" | "7.1" | "AAC" | "AC3" | "unknown")[];
+  hdr10Plus?: boolean;
+  hdr10?: boolean;
+  audio: ("Atmos" | "TrueHD" | "DTS-HD" | "DTS:X" | "DTS" | "DDP" | "5.1" | "7.1" | "AAC" | "AC3" | "unknown")[];
   releaseGroup: string; // Defaults to "unknown"
   season?: number;
   episode?: number;
@@ -13,6 +15,58 @@ export interface ParsedRelease {
   animeEpisode?: number;
   ott: ("Netflix" | "AmazonPrime" | "DisneyHotstar" | "JioCinema")[];
 }
+
+const COMMON_GROUPS = [
+  "FraMeSToR",
+  "CtrlHD",
+  "QxR",
+  "Tigole",
+  "PSA",
+  "YIFY",
+  "RARBG",
+  "GalaxyRG",
+  "FGT",
+  "silence",
+  "GanoLa",
+  "YTS",
+  "Vyto",
+  "Joy",
+  "MiNX",
+  "NTb",
+  "FLUX",
+  "KOGi",
+  "WiKi",
+  "CHD",
+  "D-Z0N3",
+  "DON",
+  "TayTO",
+  "HONE",
+  "playBD",
+  "BONE",
+  "TermiNAL",
+  "APEX",
+  "EVO",
+  "ION10",
+  "AMRAP",
+  "Vyndros",
+  "d3g",
+  "Pahe",
+  "SHeRLaK",
+  "DRONES",
+  "SPiRiT",
+  "GECKOS",
+  "ROVERS",
+  "SPARKS",
+  "COCoain",
+  "TombDoc",
+  "GZ",
+  "ShAaNiG",
+  "TGx",
+  "SubsPlease",
+  "Erai-raws",
+  "Judas",
+  "HorribleSubs"
+];
 
 /**
  * Parses a torrent title to extract structured metadata.
@@ -67,19 +121,30 @@ export function parseTorrentName(title: string): ParsedRelease {
   }
 
   // 4. HDR & Dolby Vision
-  const hdr = /\b(hdr|hdr10|hdr10\+|10bit)\b/i.test(lowerTitle);
   const dolbyVision = /\b(dv|dovi|dolby[-._]?vision)\b/i.test(lowerTitle);
+  const hdr10Plus = /\bhdr10\+/i.test(lowerTitle) || /\bhdr10plus\b/i.test(lowerTitle);
+  const hdr10 = /\b(hdr10)\b/i.test(lowerTitle);
+  const generalHdr = /\b(hdr|10bit)\b/i.test(lowerTitle);
+  const isSdr = /\bsdr\b/i.test(lowerTitle);
+  const hdr = !isSdr && (dolbyVision || hdr10Plus || hdr10 || generalHdr);
 
   // 5. Audio Markers
   const audio: ParsedRelease["audio"] = [];
   if (/\b(atmos)\b/i.test(lowerTitle)) {
     audio.push("Atmos");
   }
-  if (/\b(ddp|dd\+|eac3)\b/i.test(lowerTitle)) {
-    audio.push("DDP");
+  if (/\b(truehd|true[-._]?hd)\b/i.test(lowerTitle)) {
+    audio.push("TrueHD");
   }
-  if (/\b(dts[-._]?hd|dts[-._]?ma|dts)\b/i.test(lowerTitle)) {
+  if (/\b(dts[-._]?x)\b/i.test(lowerTitle)) {
+    audio.push("DTS:X");
+  } else if (/\b(dts[-._]?hd|dts[-._]?ma)\b/i.test(lowerTitle)) {
+    audio.push("DTS-HD");
+  } else if (/\b(dts)\b/i.test(lowerTitle)) {
     audio.push("DTS");
+  }
+  if (/\b(ddp|dd\+|eac3|dolby[-._]?digital[-._]?plus|dolby[-._]?digital\+)\b/i.test(lowerTitle)) {
+    audio.push("DDP");
   }
   if (/\b(5\.1|5\s1|ch5\.1|6ch)\b/i.test(lowerTitle)) {
     audio.push("5.1");
@@ -117,16 +182,13 @@ export function parseTorrentName(title: string): ParsedRelease {
   }
 
   // 7. Anime markers and fansub groups
-  // Typical anime: starts with [FansubGroup] e.g. [SubsPlease] Frieren - 05 (1080p) [82BA7D5A].mkv
   let isAnime = false;
   let animeFansubGroup = "unknown";
   let animeEpisode: number | undefined;
 
-  // Detect fansub group at start
   const animeGroupMatch = cleanTitle.match(/^\[([^\]]+)\]/);
   if (animeGroupMatch) {
     const groupName = animeGroupMatch[1].trim();
-    // Exclude general tags like "1080p", "Dual-Audio" as release groups
     const notGroup = /^(2160p|1080p|720p|480p|hdr|hevc|x265|x264|dual[-._]?audio|multi[-._]?audio)$/i.test(groupName);
     if (!notGroup) {
       isAnime = true;
@@ -134,41 +196,50 @@ export function parseTorrentName(title: string): ParsedRelease {
     }
   }
 
-  // Detect anime absolute episode pattern, e.g., " - 05" or " - 128" or " - 01v2"
   const animeEpMatch = cleanTitle.match(/\s+-\s+(\d+)(?:v\d+)?\b/);
   if (animeEpMatch) {
     isAnime = true;
     animeEpisode = parseInt(animeEpMatch[1], 10);
   }
 
-  // Fallback check for typical anime keywords
   if (!isAnime && /\b(subsplease|erai-raws|judas|subs[-._]?please|horriblesubs|anirelease)\b/i.test(lowerTitle)) {
     isAnime = true;
   }
 
-  // 8. Release Group Extraction (degrade gracefully, default "unknown")
+  // 8. Release Group Extraction
   let releaseGroup = "unknown";
-  
+
   if (isAnime && animeFansubGroup !== "unknown") {
-    // For anime, the fansub group is the release group
     releaseGroup = animeFansubGroup;
   } else {
-    // Standard scene/p2p groups are typically at the end after a hyphen: "Title.1080p-Group"
-    // We split by hyphens and look at the last part, checking if it looks like a valid group name
-    const parts = cleanTitle.split("-");
-    if (parts.length > 1) {
-      const potentialGroup = parts[parts.length - 1].trim();
-      // Validate potential group is not empty, does not contain dots/spaces (scene groups are simple tokens),
-      // and is not a common video/audio tag
-      const invalidGroupKeywords = /^(2160p|1080p|720p|480p|hevc|x265|x264|h264|h265|web|webdl|web-dl|bluray|hdtv|cam|ts|dd5|dd2|ddp|dts|aac|ac3|atmos|hdr|dual|multi|10bit)$/i;
-      if (
-        potentialGroup.length > 0 && 
-        potentialGroup.length < 15 && 
-        !/\s/.test(potentialGroup) && 
-        !invalidGroupKeywords.test(potentialGroup)
-      ) {
-        // Strip square brackets if present (e.g. -[TGx])
-        releaseGroup = potentialGroup.replace(/[\[\]]/g, "");
+    const titleWithoutExt = cleanTitle.replace(/\.(mkv|mp4|avi|ts|m2ts)$/i, "").trim();
+
+    // A. Match from prioritized dictionary of common release groups at the end of title
+    // Match preceded by dot, hyphen, space, bracket, or parenthesis
+    const groupRegex = new RegExp(`[\\b\\-\\.\\[\\(\\s](${COMMON_GROUPS.join("|")})[\\]\\)\\b\\s]*$`, "i");
+    const dictMatch = titleWithoutExt.match(groupRegex);
+    if (dictMatch) {
+      const matchedName = dictMatch[1];
+      const exactGroup = COMMON_GROUPS.find(g => g.toLowerCase() === matchedName.toLowerCase());
+      if (exactGroup) {
+        releaseGroup = exactGroup;
+      }
+    }
+
+    // B. Heuristic fallback for standard Scene/P2P hyphenated naming (e.g., Title-Group)
+    if (releaseGroup === "unknown") {
+      const parts = titleWithoutExt.split("-");
+      if (parts.length > 1) {
+        const potentialGroup = parts[parts.length - 1].trim();
+        const invalidGroupKeywords = /^(2160p|1080p|720p|480p|hevc|x265|x264|h264|h265|web|webdl|web-dl|bluray|hdtv|cam|ts|dd5|dd2|ddp|dts|aac|ac3|atmos|hdr|dual|multi|10bit|sdr)$/i;
+        if (
+          potentialGroup.length > 0 &&
+          potentialGroup.length < 15 &&
+          !/\s/.test(potentialGroup) &&
+          !invalidGroupKeywords.test(potentialGroup)
+        ) {
+          releaseGroup = potentialGroup.replace(/[\[\]\(\)]/g, "");
+        }
       }
     }
   }
@@ -194,6 +265,8 @@ export function parseTorrentName(title: string): ParsedRelease {
     codec,
     hdr,
     dolbyVision,
+    hdr10Plus,
+    hdr10,
     audio,
     releaseGroup,
     season,

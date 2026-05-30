@@ -9,10 +9,13 @@ export interface LanguageDetectionResult {
     isMultiAudio: boolean;
     isOrg?: boolean;
     isHq?: boolean;
+    languages?: string[];
+    flags?: string[];
 }
 /**
  * Deterministically detects language/audio configuration from a release title.
  * Provides high, medium, and weak confidence classifications using expanded dictionaries.
+ * Additionally extracts high-confidence visual language flags and list for presentation.
  */
 export declare function detectLanguage(title: string): LanguageDetectionResult;
 //# sourceMappingURL=language.d.ts.map

@@ -1,0 +1,26 @@
+{$DOMAIN} {
+    # Reverse proxy all incoming traffic directly to the SalvoStream backend container
+    reverse_proxy salvostream-backend:3000
+
+    # Enable Gzip and Zstandard compression for faster response times
+    encode gzip zstd
+
+    # Apply lightweight security headers
+    header {
+        # Disable framing to prevent clickjacking
+        X-Frame-Options "DENY"
+        # Block MIME-type sniffing
+        X-Content-Type-Options "nosniff"
+        # Restrict referrer leakage
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
+    # Enable structured request/response logging (useful for diagnostics)
+    log {
+        output file /data/caddy_access.log {
+            roll_size 10mb
+            roll_keep 5
+        }
+        format json
+    }
+}

@@ -1,9 +1,31 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.detectLanguage = detectLanguage;
+const CONFIDENT_LANGUAGES = [
+    { name: "Hindi", flag: "🇮🇳", regex: /\b(hindi|hin)\b/i },
+    { name: "Tamil", flag: "🇮🇳", regex: /\b(tamil|tam)\b/i },
+    { name: "Telugu", flag: "🇮🇳", regex: /\b(telugu|tel)\b/i },
+    { name: "Kannada", flag: "🇮🇳", regex: /\b(kannada|kan)\b/i },
+    { name: "Malayalam", flag: "🇮🇳", regex: /\b(malayalam|mal)\b/i },
+    { name: "Bengali", flag: "🇮🇳", regex: /\b(bengali|ben)\b/i },
+    { name: "Marathi", flag: "🇮🇳", regex: /\b(marathi|mar)\b/i },
+    { name: "Punjabi", flag: "🇮🇳", regex: /\b(punjabi|pan|pja)\b/i },
+    { name: "Gujarati", flag: "🇮🇳", regex: /\b(gujarati|guj)\b/i },
+    { name: "English", flag: "🇬🇧", regex: /\b(english|eng)\b/i },
+    { name: "French", flag: "🇫🇷", regex: /\b(french|fre|fra)\b/i },
+    { name: "Spanish", flag: "🇪🇸", regex: /\b(spanish|spa|esp)\b/i },
+    { name: "German", flag: "🇩🇪", regex: /\b(german|ger|deu)\b/i },
+    { name: "Italian", flag: "🇮🇹", regex: /\b(italian|ita)\b/i },
+    { name: "Portuguese", flag: "🇵🇹", regex: /\b(portuguese|por)\b/i },
+    { name: "Russian", flag: "🇷🇺", regex: /\b(russian|rus)\b/i },
+    { name: "Chinese", flag: "🇨🇳", regex: /\b(chinese|chi|zho)\b/i },
+    { name: "Japanese", flag: "🇯🇵", regex: /\b(japanese|jpn)\b/i },
+    { name: "Korean", flag: "🇰🇷", regex: /\b(korean|kor)\b/i }
+];
 /**
  * Deterministically detects language/audio configuration from a release title.
  * Provides high, medium, and weak confidence classifications using expanded dictionaries.
+ * Additionally extracts high-confidence visual language flags and list for presentation.
  */
 function detectLanguage(title) {
     const cleanTitle = title.trim();
@@ -87,6 +109,51 @@ function detectLanguage(title) {
     const finalIsHindiDubbed = isHindiDubbed || detectedLanguage === "Hindi Dubbed";
     const finalIsDualAudio = isDualAudio || detectedLanguage === "Dual Audio";
     const finalIsMultiAudio = isMultiAudio || detectedLanguage === "Multi Audio";
+    // --- High-fidelity Language & Flag Extraction for Presentation ---
+    const detectedLangsList = [];
+    const flagsList = [];
+    // Match all languages confidently present in the title
+    for (const lang of CONFIDENT_LANGUAGES) {
+        if (lang.regex.test(lowerTitle)) {
+            detectedLangsList.push(lang.name);
+            if (!flagsList.includes(lang.flag)) {
+                flagsList.push(lang.flag);
+            }
+        }
+    }
+    // Heuristic: If dual and we confidently found a regional/Hindi language,
+    // but English is not explicitly in the title, it is practically always a Dual Audio with English.
+    if (finalIsDualAudio && detectedLangsList.length > 0) {
+        const hasIndianLang = detectedLangsList.some(l => ["Hindi", "Tamil", "Telugu", "Kannada", "Malayalam", "Bengali", "Marathi", "Punjabi", "Gujarati"].includes(l));
+        if (hasIndianLang && !detectedLangsList.includes("English")) {
+            detectedLangsList.push("English");
+            if (!flagsList.includes("🇬🇧")) {
+                flagsList.push("🇬🇧");
+            }
+        }
+    }
+    // Deduplicate and order flags: 🇮🇳 (Hindi/Regional) first, then 🇬🇧 (English), then others
+    const finalFlags = [];
+    if (flagsList.includes("🇮🇳"))
+        finalFlags.push("🇮🇳");
+    if (flagsList.includes("🇬🇧"))
+        finalFlags.push("🇬🇧");
+    for (const flag of flagsList) {
+        if (flag !== "🇮🇳" && flag !== "🇬🇧") {
+            finalFlags.push(flag);
+        }
+    }
+    // Fallback default flags for Dual/Multi Audio when no languages matched confidently
+    if ((finalIsDualAudio || finalIsMultiAudio) && finalFlags.length === 0) {
+        // We default to glob/network flag when no language was explicitly detected
+        finalFlags.push("🌐");
+    }
+    else if (detectedLanguage === "English" && finalFlags.length === 0) {
+        finalFlags.push("🇬🇧");
+    }
+    else if (finalIsHindi && finalFlags.length === 0) {
+        finalFlags.push("🇮🇳");
+    }
     return {
         detectedLanguage,
         confidence,
@@ -95,7 +162,9 @@ function detectLanguage(title) {
         isDualAudio: finalIsDualAudio,
         isMultiAudio: finalIsMultiAudio,
         isOrg,
-        isHq
+        isHq,
+        languages: detectedLangsList.length > 0 ? detectedLangsList : [detectedLanguage],
+        flags: finalFlags
     };
 }
 //# sourceMappingURL=language.js.map

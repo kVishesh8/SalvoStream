@@ -1,0 +1,99 @@
+version: "3.8"
+
+services:
+  caddy:
+    image: caddy:2.7-alpine
+    container_name: salvostream-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /opt/salvostream/Caddyfile:/etc/caddy/Caddyfile:ro
+      - /opt/salvostream/caddy_data:/data
+      - /opt/salvostream/caddy_config:/config
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - salvostream-network
+
+  backend:
+    build:
+      context: ../..
+      dockerfile: apps/backend/Dockerfile
+    container_name: salvostream-backend
+    # Port 3000 is NOT exposed to the host/public. Caddy routes internal traffic to it.
+    volumes:
+      - /opt/salvostream/data:/app/data
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - SQLITE_PATH=/app/data/salvostream.db
+      - REDIS_URL=redis://redis:6379
+      - PROWLARR_URL=http://prowlarr:9696
+      - PROWLARR_API_KEY=${PROWLARR_API_KEY}
+      - FLARESOLVERR_ENABLED=${FLARESOLVERR_ENABLED:-false}
+      - FLARESOLVERR_URL=${FLARESOLVERR_URL:-http://flaresolverr:8191}
+    depends_on:
+      redis:
+        condition: service_healthy
+      prowlarr:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - salvostream-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: salvostream-redis
+    # Port 6379 is NOT exposed to the host/public.
+    volumes:
+      - /opt/salvostream/redis_data:/data
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - salvostream-network
+
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:2.3.5
+    container_name: salvostream-prowlarr
+    # Port 9696 is NOT exposed to the host/public. Administrative access is managed via SSH tunneling.
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - /opt/salvostream/prowlarr:/config
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9696/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - salvostream-network
+
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: salvostream-flaresolverr
+    # Port 8191 is NOT exposed to the host/public.
+    environment:
+      - LOG_LEVEL=${FLARESOLVERR_LOG_LEVEL:-info}
+      - PORT=8191
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8191/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - salvostream-network
+
+networks:
+  salvostream-network:
+    driver: bridge

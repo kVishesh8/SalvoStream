@@ -4,7 +4,9 @@ export interface ParsedRelease {
     codec: "HEVC" | "AVC" | "AV1" | "unknown";
     hdr: boolean;
     dolbyVision: boolean;
-    audio: ("Atmos" | "DDP" | "DTS" | "5.1" | "7.1" | "AAC" | "AC3" | "unknown")[];
+    hdr10Plus?: boolean;
+    hdr10?: boolean;
+    audio: ("Atmos" | "TrueHD" | "DTS-HD" | "DTS:X" | "DTS" | "DDP" | "5.1" | "7.1" | "AAC" | "AC3" | "unknown")[];
     releaseGroup: string;
     season?: number;
     episode?: number;

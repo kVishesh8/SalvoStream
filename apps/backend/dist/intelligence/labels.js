@@ -35,81 +35,185 @@ function formatStreamName(parsed) {
 }
 /**
  * Formats the rich, structured stream description (title) for Stremio.
- * Keeps labels compact, clean, and professional (not emoji-heavy).
- * Preserves the original raw title for full debuggability and transparency.
+ * Keeps labels compact, clean, and professional.
+ * Preserves the original raw title for full debuggability and transparency as a 5th line.
  */
 function formatStreamTitle(rawTitle, parsed, lang, size, seeders, peers, indexer) {
-    const badges = [];
-    // 1. Ultra-compact, TV-friendly Language marker (Only when confidence is sufficient)
-    if (lang.confidence === "high" || lang.confidence === "medium") {
-        switch (lang.detectedLanguage) {
-            case "Hindi":
-                badges.push("🇮🇳 HIN");
-                break;
-            case "Hindi Dubbed":
-                badges.push("🇮🇳 DUB");
-                break;
-            case "Dual Audio":
-                badges.push("🌐 DUAL");
-                break;
-            case "Multi Audio":
-                badges.push("🌐 MULTI");
-                break;
-            case "English":
-                badges.push("🇬🇧 ENG");
-                break;
+    const lines = [];
+    // --- Line 1: Primary Discovery Metadata (Language • Resolution • Source Type) ---
+    const line1Parts = [];
+    if (lang.flags && lang.flags.length > 0) {
+        const flagsStr = lang.flags.join(" ");
+        let langLabel = "";
+        if (lang.detectedLanguage === "Hindi") {
+            langLabel = "Hindi";
+        }
+        else if (lang.detectedLanguage === "Hindi Dubbed") {
+            langLabel = "Dubbed";
+        }
+        else if (lang.detectedLanguage === "Dual Audio") {
+            langLabel = "Dual";
+        }
+        else if (lang.detectedLanguage === "Multi Audio") {
+            langLabel = "Multi";
+        }
+        else if (lang.detectedLanguage === "English") {
+            langLabel = "ENG";
+        }
+        if (langLabel) {
+            line1Parts.push(`${flagsStr} ${langLabel}`);
+        }
+        else {
+            line1Parts.push(flagsStr);
         }
     }
-    // 2. Resolution & Source Type
-    if (parsed.resolution !== "unknown") {
-        badges.push(parsed.resolution);
+    if (parsed.resolution && parsed.resolution !== "unknown") {
+        line1Parts.push(parsed.resolution);
     }
-    if (parsed.sourceType !== "unknown") {
-        badges.push(parsed.sourceType);
+    if (parsed.sourceType && parsed.sourceType !== "unknown") {
+        line1Parts.push(parsed.sourceType);
     }
-    // 3. Compact OTT Platform Markers
-    if (parsed.ott && parsed.ott.length > 0) {
-        parsed.ott.forEach(platform => {
-            if (platform === "Netflix")
-                badges.push("NF");
-            else if (platform === "AmazonPrime")
-                badges.push("AMZN");
-            else if (platform === "DisneyHotstar")
-                badges.push("DSNP");
-            else if (platform === "JioCinema")
-                badges.push("JIO");
-        });
+    if (line1Parts.length > 0) {
+        lines.push(line1Parts.join(" • "));
     }
-    // 4. Format/Codec & Audio indicators
-    if (parsed.dolbyVision) {
-        badges.push("DV");
+    // --- Line 2: Technical Quality Metadata (Codec • HDR/DV • Audio Format) ---
+    const line2Parts = [];
+    // A. Codec (prefer raw title precision: x265/x264, else fallback to parsed.codec)
+    let displayCodec = "";
+    if (/\bx265\b/i.test(rawTitle)) {
+        displayCodec = "x265";
     }
-    if (parsed.hdr) {
-        badges.push("HDR");
+    else if (/\bx264\b/i.test(rawTitle)) {
+        displayCodec = "x264";
     }
-    if (parsed.codec !== "unknown") {
-        badges.push(parsed.codec);
+    else if (parsed.codec && parsed.codec !== "unknown") {
+        displayCodec = parsed.codec;
     }
-    if (parsed.audio && parsed.audio.includes("DDP")) {
-        badges.push("DDP");
+    if (displayCodec) {
+        line2Parts.push(displayCodec);
     }
-    else if (parsed.audio && parsed.audio.includes("Atmos")) {
-        badges.push("ATMOS");
+    // B. HDR/Dolby Vision (premium normalized combination)
+    let displayHdr = "";
+    if (parsed.dolbyVision && parsed.hdr10Plus) {
+        displayHdr = "DV/HDR10+";
     }
-    // 5. File Size (formatted cleanly)
-    if (size > 0) {
-        badges.push((0, shared_utils_1.formatBytes)(size));
+    else if (parsed.dolbyVision && parsed.hdr10) {
+        displayHdr = "DV/HDR10";
     }
-    // 6. Release Group (graceful fallback)
-    if (parsed.releaseGroup !== "unknown") {
-        badges.push(parsed.releaseGroup);
+    else if (parsed.dolbyVision && parsed.hdr) {
+        displayHdr = "DV/HDR";
     }
-    // Assemble primary clean label
-    const cleanLabelLine = badges.join(" • ");
-    // Build the multi-line UI description
-    // Line 1: Structured details
-    // Line 2: Original release title (preserved for debugging/tuning)
-    // Line 3: Seeders, peers, and source indexer
-    return `${cleanLabelLine}\nOriginal: ${rawTitle}\n👥 ${seeders} seeds • ${peers} peers • ${indexer}`;
+    else if (parsed.dolbyVision) {
+        displayHdr = "DV";
+    }
+    else if (parsed.hdr10Plus) {
+        displayHdr = "HDR10+";
+    }
+    else if (parsed.hdr10) {
+        displayHdr = "HDR10";
+    }
+    else if (parsed.hdr) {
+        displayHdr = "HDR";
+    }
+    if (displayHdr) {
+        line2Parts.push(displayHdr);
+    }
+    // C. Audio Format (premium compact normalization)
+    let displayAudio = "";
+    if (parsed.audio && parsed.audio.length > 0 && !parsed.audio.includes("unknown")) {
+        if (parsed.audio.includes("Atmos")) {
+            displayAudio = "Atmos";
+        }
+        else if (parsed.audio.includes("TrueHD")) {
+            displayAudio = "TrueHD";
+        }
+        else if (parsed.audio.includes("DTS:X")) {
+            displayAudio = "DTS:X";
+        }
+        else if (parsed.audio.includes("DTS-HD")) {
+            displayAudio = "DTS-HD MA";
+        }
+        else if (parsed.audio.includes("DTS")) {
+            displayAudio = "DTS";
+        }
+        else if (parsed.audio.includes("DDP")) {
+            if (parsed.audio.includes("7.1")) {
+                displayAudio = "DD+ 7.1";
+            }
+            else if (parsed.audio.includes("5.1")) {
+                displayAudio = "DD+ 5.1";
+            }
+            else {
+                displayAudio = "DD+";
+            }
+        }
+        else if (parsed.audio.includes("AC3")) {
+            if (parsed.audio.includes("5.1")) {
+                displayAudio = "DD 5.1";
+            }
+            else {
+                displayAudio = "AC3";
+            }
+        }
+        else if (parsed.audio.includes("AAC")) {
+            if (parsed.audio.includes("5.1")) {
+                displayAudio = "AAC 5.1";
+            }
+            else {
+                displayAudio = "AAC";
+            }
+        }
+        else if (parsed.audio.includes("7.1")) {
+            displayAudio = "7.1";
+        }
+        else if (parsed.audio.includes("5.1")) {
+            displayAudio = "5.1";
+        }
+    }
+    if (displayAudio) {
+        line2Parts.push(displayAudio);
+    }
+    if (line2Parts.length > 0) {
+        lines.push(line2Parts.join(" • "));
+    }
+    // --- Line 3: Operational Metadata (Size • Seeders) ---
+    const line3Parts = [];
+    if (size && size > 0) {
+        line3Parts.push((0, shared_utils_1.formatBytes)(size));
+    }
+    if (seeders !== undefined && seeders >= 0) {
+        line3Parts.push(`👥 ${seeders}`);
+    }
+    if (line3Parts.length > 0) {
+        lines.push(line3Parts.join(" • "));
+    }
+    // --- Line 4: Source Identity (Tracker • Release Group) ---
+    const line4Parts = [];
+    if (indexer) {
+        let cleanIndexer = indexer.trim();
+        if (cleanIndexer.toLowerCase() === "torrentgalaxy") {
+            cleanIndexer = "TorrentGalaxy";
+        }
+        else if (cleanIndexer.toLowerCase() === "tamilblasters") {
+            cleanIndexer = "TamilBlasters";
+        }
+        else if (cleanIndexer.toLowerCase() === "1337x") {
+            cleanIndexer = "1337x";
+        }
+        else {
+            // Capitalize word boundaries nicely
+            cleanIndexer = cleanIndexer.replace(/\b\w/g, c => c.toUpperCase());
+        }
+        line4Parts.push(cleanIndexer);
+    }
+    if (parsed.releaseGroup && parsed.releaseGroup !== "unknown") {
+        line4Parts.push(parsed.releaseGroup);
+    }
+    if (line4Parts.length > 0) {
+        lines.push(line4Parts.join(" • "));
+    }
+    // --- Line 5: Raw title for full transparency and troubleshooting ---
+    lines.push(`Original: ${rawTitle}`);
+    return lines.join("\n");
 }
 //# sourceMappingURL=labels.js.map
