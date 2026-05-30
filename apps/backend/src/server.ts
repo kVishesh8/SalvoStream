@@ -3,6 +3,7 @@ import { config, logConfigSummary } from "./config/env.js";
 import { loggerConfig } from "./logger/logger.js";
 import { initializeDatabase, closeDatabase } from "./db/sqlite.js";
 import { initializeRedis, closeRedis } from "./redis/client.js";
+import { ProwlarrClient } from "./prowlarr/client.js";
 
 // Routes
 import manifestRoutes from "./routes/manifest.js";
@@ -28,6 +29,12 @@ async function startServer() {
 
     // 4. Initialize Redis Connection (ioredis)
     initializeRedis(fastify.log);
+
+    // 4.5. Check FlareSolverr connectivity gracefully if enabled
+    const prowlarr = new ProwlarrClient(fastify.log);
+    prowlarr.verifyFlareSolverrConnectivity().catch(err => {
+      fastify.log.warn(`FlareSolverr check failed: ${err.message}`);
+    });
 
     // 5. Register Routes
     await fastify.register(manifestRoutes);

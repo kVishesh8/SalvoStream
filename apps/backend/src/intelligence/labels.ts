@@ -46,24 +46,25 @@ export function formatStreamTitle(
 ): string {
   const badges: string[] = [];
 
-  // 1. Language marker (restrained emoji usage)
-  switch (lang.detectedLanguage) {
-    case "Hindi":
-      badges.push("🇮🇳 Hindi");
-      break;
-    case "Hindi Dubbed":
-      badges.push("🇮🇳 Hin-Dubbed");
-      break;
-    case "Dual Audio":
-      badges.push("🇮🇳 Hindi Dual");
-      break;
-    case "Multi Audio":
-      badges.push("🔊 Multi Audio");
-      break;
-    case "English":
-    default:
-      badges.push("🇬🇧 English");
-      break;
+  // 1. Ultra-compact, TV-friendly Language marker (Only when confidence is sufficient)
+  if (lang.confidence === "high" || lang.confidence === "medium") {
+    switch (lang.detectedLanguage) {
+      case "Hindi":
+        badges.push("🇮🇳 HIN");
+        break;
+      case "Hindi Dubbed":
+        badges.push("🇮🇳 DUB");
+        break;
+      case "Dual Audio":
+        badges.push("🌐 DUAL");
+        break;
+      case "Multi Audio":
+        badges.push("🌐 MULTI");
+        break;
+      case "English":
+        badges.push("🇬🇧 ENG");
+        break;
+    }
   }
 
   // 2. Resolution & Source Type
@@ -74,7 +75,17 @@ export function formatStreamTitle(
     badges.push(parsed.sourceType);
   }
 
-  // 3. Format/Codec indicators
+  // 3. Compact OTT Platform Markers
+  if (parsed.ott && parsed.ott.length > 0) {
+    parsed.ott.forEach(platform => {
+      if (platform === "Netflix") badges.push("NF");
+      else if (platform === "AmazonPrime") badges.push("AMZN");
+      else if (platform === "DisneyHotstar") badges.push("DSNP");
+      else if (platform === "JioCinema") badges.push("JIO");
+    });
+  }
+
+  // 4. Format/Codec & Audio indicators
   if (parsed.dolbyVision) {
     badges.push("DV");
   }
@@ -84,13 +95,18 @@ export function formatStreamTitle(
   if (parsed.codec !== "unknown") {
     badges.push(parsed.codec);
   }
+  if (parsed.audio && parsed.audio.includes("DDP")) {
+    badges.push("DDP");
+  } else if (parsed.audio && parsed.audio.includes("Atmos")) {
+    badges.push("ATMOS");
+  }
 
-  // 4. File Size (formatted cleanly)
+  // 5. File Size (formatted cleanly)
   if (size > 0) {
     badges.push(formatBytes(size));
   }
 
-  // 5. Release Group (graceful fallback)
+  // 6. Release Group (graceful fallback)
   if (parsed.releaseGroup !== "unknown") {
     badges.push(parsed.releaseGroup);
   }

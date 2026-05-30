@@ -11,6 +11,7 @@ export interface ParsedRelease {
   isAnime: boolean;
   animeFansubGroup: string; // Defaults to "unknown"
   animeEpisode?: number;
+  ott: ("Netflix" | "AmazonPrime" | "DisneyHotstar" | "JioCinema")[];
 }
 
 /**
@@ -172,6 +173,21 @@ export function parseTorrentName(title: string): ParsedRelease {
     }
   }
 
+  // 9. OTT Marker Extraction (Strict word boundaries to avoid false positives)
+  const ott: ParsedRelease["ott"] = [];
+  if (/\b(nf|netflix)\b/i.test(lowerTitle)) {
+    ott.push("Netflix");
+  }
+  if (/\b(amzn|amazon|prime)\b/i.test(lowerTitle)) {
+    ott.push("AmazonPrime");
+  }
+  if (/\b(dsnp|hotstar|disney)\b/i.test(lowerTitle)) {
+    ott.push("DisneyHotstar");
+  }
+  if (/\b(jiocinema)\b/i.test(lowerTitle)) {
+    ott.push("JioCinema");
+  }
+
   return {
     resolution,
     sourceType,
@@ -184,6 +200,7 @@ export function parseTorrentName(title: string): ParsedRelease {
     episode,
     isAnime,
     animeFansubGroup,
-    animeEpisode
+    animeEpisode,
+    ott
   };
 }

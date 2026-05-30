@@ -47,7 +47,9 @@ exports.config = {
     SQLITE_PATH: process.env.SQLITE_PATH || shared_constants_1.DEFAULT_SQLITE_PATH,
     NODE_ENV: process.env.NODE_ENV || shared_constants_1.DEFAULT_NODE_ENV,
     PROWLARR_URL: process.env.PROWLARR_URL || "http://localhost:9696",
-    PROWLARR_API_KEY: process.env.PROWLARR_API_KEY || ""
+    PROWLARR_API_KEY: process.env.PROWLARR_API_KEY || "",
+    FLARESOLVERR_ENABLED: process.env.FLARESOLVERR_ENABLED === "true",
+    FLARESOLVERR_URL: process.env.FLARESOLVERR_URL || "http://localhost:8191"
 };
 // Logs clean startup configuration summary (hiding credentials if present)
 function logConfigSummary(logger) {
@@ -62,5 +64,7 @@ function logConfigSummary(logger) {
     logger.info(`  - REDIS_URL: ${sanitizedRedis}`);
     logger.info(`  - PROWLARR_URL: ${exports.config.PROWLARR_URL}`);
     logger.info(`  - PROWLARR_API_KEY: ${sanitizedApiKey}`);
+    logger.info(`  - FLARESOLVERR_ENABLED: ${exports.config.FLARESOLVERR_ENABLED}`);
+    logger.info(`  - FLARESOLVERR_URL: ${exports.config.FLARESOLVERR_URL}`);
 }
 //# sourceMappingURL=env.js.map

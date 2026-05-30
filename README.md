@@ -131,6 +131,35 @@ Stage 2 integrates **Prowlarr** to search torrent trackers. To configure the sea
 
 ---
 
+## 2.7. Optional FlareSolverr Proxy & Tracker Health (Stage 3.5)
+
+Stage 3.5 expands the source ecosystem with optional FlareSolverr proxy connectivity, lightweight tracker health tracking, expanded Hindi/dual-audio coverage, and compact TV-friendly stream labels.
+
+### Configuring FlareSolverr (Optional)
+If you want to use FlareSolverr to solve Cloudflare challenges on protected indexers:
+1. In your `.env` file, enable FlareSolverr:
+   ```env
+   FLARESOLVERR_ENABLED=true
+   FLARESOLVERR_URL=http://localhost:8191
+   ```
+2. Restart the Docker stack:
+   ```bash
+   docker compose up -d
+   ```
+3. Open your Prowlarr web UI (`http://localhost:9696`).
+4. Navigate to **Settings** -> **Indexer Proxies** and click **+** (Add).
+5. Select **FlareSolverr** from the list.
+6. Enter `http://flaresolverr:8191` in the **Host** field.
+7. Under **Tags**, enter a tag name (e.g. `flaresolverr`) and click **Save**.
+8. Go to **Settings** -> **Indexers**, click edit on any protected indexer (e.g. Torrent9), add the matching tag `flaresolverr`, and click **Save**.
+9. Prowlarr will now automatically proxy challenge requests through FlareSolverr!
+
+### Lightweight Tracker Health
+The backend dynamically monitors query success and latency for each torrent indexer. You can check the health status of all indexers by querying the GET `/health` endpoint under the `trackers` field.
+If a tracker fails 5 consecutive times, the system softly bypasses it to prevent pipeline latency. If all trackers fail, the system safely falls back to querying all active indexers to ensure you always get streams.
+
+---
+
 ## 3. Testing the Addon & API Endpoints
 
 Once the server is running (either locally or through Docker), you can test these URLs in your web browser:

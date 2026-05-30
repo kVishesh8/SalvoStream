@@ -17,6 +17,8 @@ services:
       - REDIS_URL=redis://redis:6379
       - PROWLARR_URL=http://prowlarr:9696
       - PROWLARR_API_KEY=${PROWLARR_API_KEY:-}
+      - FLARESOLVERR_ENABLED=${FLARESOLVERR_ENABLED:-false}
+      - FLARESOLVERR_URL=${FLARESOLVERR_URL:-http://flaresolverr:8191}
     depends_on:
       redis:
         condition: service_healthy
@@ -54,6 +56,23 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9696/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - salvostream-network
+
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: salvostream-flaresolverr
+    environment:
+      - LOG_LEVEL=${FLARESOLVERR_LOG_LEVEL:-info}
+      - PORT=8191
+    ports:
+      - "8191:8191"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8191/health"]
       interval: 10s
       timeout: 5s
       retries: 5

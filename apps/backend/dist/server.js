@@ -8,6 +8,7 @@ const env_js_1 = require("./config/env.js");
 const logger_js_1 = require("./logger/logger.js");
 const sqlite_js_1 = require("./db/sqlite.js");
 const client_js_1 = require("./redis/client.js");
+const client_js_2 = require("./prowlarr/client.js");
 // Routes
 const manifest_js_1 = __importDefault(require("./routes/manifest.js"));
 const health_js_1 = __importDefault(require("./routes/health.js"));
@@ -27,6 +28,11 @@ async function startServer() {
         (0, sqlite_js_1.initializeDatabase)(fastify.log);
         // 4. Initialize Redis Connection (ioredis)
         (0, client_js_1.initializeRedis)(fastify.log);
+        // 4.5. Check FlareSolverr connectivity gracefully if enabled
+        const prowlarr = new client_js_2.ProwlarrClient(fastify.log);
+        prowlarr.verifyFlareSolverrConnectivity().catch(err => {
+            fastify.log.warn(`FlareSolverr check failed: ${err.message}`);
+        });
         // 5. Register Routes
         await fastify.register(manifest_js_1.default);
         await fastify.register(health_js_1.default);

@@ -48,6 +48,12 @@ export interface HealthResponse {
     external: string;
   };
   timestamp: string;
+  trackers?: {
+    flaresolverrEnabled: boolean;
+    flaresolverrConnected?: boolean;
+    prowlarrConnected: boolean;
+    indexers: any[];
+  };
 }
 
 export interface ReadyResponse {

@@ -9,6 +9,7 @@ export interface ScoringResult {
     codecBonus: number;
     hdrBonus: number;
     seederBonus: number;
+    ottBonus: number;
     isCam: boolean;
 }
 /**

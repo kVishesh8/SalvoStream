@@ -44,7 +44,7 @@ export function processAndRenderStreams(
       logger.info({
         title: item.title,
         reason: filterResult.reason
-      });
+      }, "Filtered out junk/spam release");
       continue;
     }
 
@@ -60,7 +60,7 @@ export function processAndRenderStreams(
     // F. Score Calculation
     const scoreResult = calculateScore(parsed, lang, item.seeders);
 
-    // Filter out if score is somehow 0 (sanity check)
+    // Filter out if score is <= 0 (sanity check)
     if (scoreResult.score <= 0) {
       filteredCount++;
       continue;

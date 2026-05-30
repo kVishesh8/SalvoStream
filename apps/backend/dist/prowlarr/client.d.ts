@@ -14,6 +14,11 @@ export declare class ProwlarrClient {
     private logger;
     constructor(logger: any);
     /**
+     * Verifies FlareSolverr connectivity and logs setup guidance.
+     * Treats FlareSolverr as an optional enhancement.
+     */
+    verifyFlareSolverrConnectivity(): Promise<boolean>;
+    /**
      * Queries Prowlarr for search results using the generated query.
      */
     search(query: string, type: "movie" | "series"): Promise<ProwlarrSearchResult[]>;

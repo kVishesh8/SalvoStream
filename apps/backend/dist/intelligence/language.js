@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.detectLanguage = detectLanguage;
 /**
  * Deterministically detects language/audio configuration from a release title.
- * Provides high, medium, and weak confidence classifications.
+ * Provides high, medium, and weak confidence classifications using expanded dictionaries.
  */
 function detectLanguage(title) {
     const cleanTitle = title.trim();
@@ -14,53 +14,70 @@ function detectLanguage(title) {
     let isHindiDubbed = false;
     let isDualAudio = false;
     let isMultiAudio = false;
-    // 1. Explicit Hindi Dubbed check
-    const isDubbedRegex = /\b(hindi[-._]?dubbed|hin[-._]?dubbed|hindi[-._]?dub|hin[-._]?dub|dubbed[-._]?hindi)\b/i;
-    if (isDubbedRegex.test(lowerTitle)) {
+    let isOrg = false;
+    let isHq = false;
+    // 1. Explicit Org Hindi & Hq Hindi Patterns (High Confidence)
+    const isOrgRegex = /\b(org[-._]?hindi|hindi[-._]?org|org[-._]?hin|hin[-._]?org|original[-._]?hindi|hindi[-._]?original)\b/i;
+    const isHqRegex = /\b(hq[-._]?hindi|hindi[-._]?hq|hq[-._]?hin|hin[-._]?hq|hq[-._]?dub|dub[-._]?hq)\b/i;
+    if (isOrgRegex.test(lowerTitle)) {
+        detectedLanguage = "Hindi";
+        confidence = "high";
+        isHindi = true;
+        isOrg = true;
+    }
+    else if (isHqRegex.test(lowerTitle)) {
+        detectedLanguage = "Hindi";
+        confidence = "high";
+        isHindi = true;
+        isHq = true;
+    }
+    // 2. Explicit Hindi Dubbed check (High Confidence)
+    else if (/\b(hindi[-._]?dubbed|hin[-._]?dubbed|hindi[-._]?dub|hin[-._]?dub|dubbed[-._]?hindi|dub[-._]?hindi|hindi[-._]?dubbing|hin[-._]?dubbing)\b/i.test(lowerTitle)) {
         detectedLanguage = "Hindi Dubbed";
         confidence = "high";
         isHindiDubbed = true;
     }
-    // 2. Dual Audio with explicit Hindi and English
-    else if (/\b(dual[-._]?audio|dual[-._]?aud|dual)\b/i.test(lowerTitle) &&
+    // 3. Dual Audio with explicit Hindi and English (High Confidence)
+    else if (/\b(dual[-._]?audio|dual[-._]?aud|dual|2[-._]?audio|2[-._]?aud)\b/i.test(lowerTitle) &&
         /\b(hindi|hin|india|ind)\b/i.test(lowerTitle)) {
         detectedLanguage = "Dual Audio";
         confidence = "high";
         isDualAudio = true;
     }
-    // 3. General Dual Audio or explicit Eng-Hin / Hin-Eng patterns
-    else if (/\b(eng[-._]?hin|hin[-._]?eng|hindi[-._]?english|english[-._]?hindi)\b/i.test(lowerTitle)) {
+    // 4. Specific Eng-Hin / Hin-Eng language pair patterns (High Confidence)
+    else if (/\b(eng[-._]?hin|hin[-._]?eng|hindi[-._]?english|english[-._]?hindi|hindi[-._]?eng|eng[-._]?hindi)\b/i.test(lowerTitle) ||
+        /\b(h[-._]e|e[-._]h)\b/i.test(lowerTitle)) {
         detectedLanguage = "Dual Audio";
         confidence = "high";
         isDualAudio = true;
     }
-    // 4. Native/General Hindi Check
+    // 5. Native/General Hindi Check
     else if (/\b(hindi|hin)\b/i.test(lowerTitle)) {
-        detectedLanguage = "Hindi";
         // If it also contains "dub", mark as Hindi Dubbed (medium confidence)
-        if (/\b(dub|dubbed)\b/i.test(lowerTitle)) {
+        if (/\b(dub|dubbed|dubbing)\b/i.test(lowerTitle)) {
             detectedLanguage = "Hindi Dubbed";
             confidence = "medium";
             isHindiDubbed = true;
         }
         else {
+            detectedLanguage = "Hindi";
             confidence = "high";
             isHindi = true;
         }
     }
-    // 5. General Dual Audio (no explicit Hindi keyword, could be Eng-Spa, etc.)
-    else if (/\b(dual[-._]?audio|dual[-._]?aud|dual)\b/i.test(lowerTitle)) {
+    // 6. General Dual Audio (no explicit Hindi keyword, could be Eng-Spa, etc.)
+    else if (/\b(dual[-._]?audio|dual[-._]?aud|dual|2[-._]?audio|2[-._]?aud)\b/i.test(lowerTitle)) {
         detectedLanguage = "Dual Audio";
         confidence = "medium";
         isDualAudio = true;
     }
-    // 6. Multi Audio patterns
+    // 7. Multi Audio patterns
     else if (/\b(multi[-._]?audio|multi[-._]?aud|multi[-._]?lang|multi)\b/i.test(lowerTitle)) {
         detectedLanguage = "Multi Audio";
         confidence = /\b(multi[-._]?audio|multi[-._]?lang)\b/i.test(lowerTitle) ? "high" : "medium";
         isMultiAudio = true;
     }
-    // 7. Explicit English
+    // 8. Explicit English (High Confidence)
     else if (/\b(english|eng)\b/i.test(lowerTitle)) {
         detectedLanguage = "English";
         confidence = "high";
@@ -76,7 +93,9 @@ function detectLanguage(title) {
         isHindi: finalIsHindi,
         isHindiDubbed: finalIsHindiDubbed,
         isDualAudio: finalIsDualAudio,
-        isMultiAudio: finalIsMultiAudio
+        isMultiAudio: finalIsMultiAudio,
+        isOrg,
+        isHq
     };
 }
 //# sourceMappingURL=language.js.map

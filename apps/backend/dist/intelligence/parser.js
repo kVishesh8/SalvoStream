@@ -158,6 +158,20 @@ function parseTorrentName(title) {
             }
         }
     }
+    // 9. OTT Marker Extraction (Strict word boundaries to avoid false positives)
+    const ott = [];
+    if (/\b(nf|netflix)\b/i.test(lowerTitle)) {
+        ott.push("Netflix");
+    }
+    if (/\b(amzn|amazon|prime)\b/i.test(lowerTitle)) {
+        ott.push("AmazonPrime");
+    }
+    if (/\b(dsnp|hotstar|disney)\b/i.test(lowerTitle)) {
+        ott.push("DisneyHotstar");
+    }
+    if (/\b(jiocinema)\b/i.test(lowerTitle)) {
+        ott.push("JioCinema");
+    }
     return {
         resolution,
         sourceType,
@@ -170,7 +184,8 @@ function parseTorrentName(title) {
         episode,
         isAnime,
         animeFansubGroup,
-        animeEpisode
+        animeEpisode,
+        ott
     };
 }
 //# sourceMappingURL=parser.js.map

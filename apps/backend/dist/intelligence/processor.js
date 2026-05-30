@@ -37,7 +37,7 @@ function processAndRenderStreams(results, logger) {
             logger.info({
                 title: item.title,
                 reason: filterResult.reason
-            });
+            }, "Filtered out junk/spam release");
             continue;
         }
         // C. Extract valid infoHash (guaranteed to be non-null because of filterJunkRelease passing)
@@ -48,7 +48,7 @@ function processAndRenderStreams(results, logger) {
         const lang = (0, language_js_1.detectLanguage)(item.title);
         // F. Score Calculation
         const scoreResult = (0, scoring_js_1.calculateScore)(parsed, lang, item.seeders);
-        // Filter out if score is somehow 0 (sanity check)
+        // Filter out if score is <= 0 (sanity check)
         if (scoreResult.score <= 0) {
             filteredCount++;
             continue;

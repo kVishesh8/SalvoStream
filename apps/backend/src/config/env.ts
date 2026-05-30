@@ -16,6 +16,8 @@ export interface Config {
   NODE_ENV: string;
   PROWLARR_URL: string;
   PROWLARR_API_KEY: string;
+  FLARESOLVERR_ENABLED: boolean;
+  FLARESOLVERR_URL: string;
 }
 
 const rawPort = process.env.PORT ? parseInt(process.env.PORT, 10) : DEFAULT_PORT;
@@ -27,7 +29,9 @@ export const config: Config = {
   SQLITE_PATH: process.env.SQLITE_PATH || DEFAULT_SQLITE_PATH,
   NODE_ENV: process.env.NODE_ENV || DEFAULT_NODE_ENV,
   PROWLARR_URL: process.env.PROWLARR_URL || "http://localhost:9696",
-  PROWLARR_API_KEY: process.env.PROWLARR_API_KEY || ""
+  PROWLARR_API_KEY: process.env.PROWLARR_API_KEY || "",
+  FLARESOLVERR_ENABLED: process.env.FLARESOLVERR_ENABLED === "true",
+  FLARESOLVERR_URL: process.env.FLARESOLVERR_URL || "http://localhost:8191"
 };
 
 // Logs clean startup configuration summary (hiding credentials if present)
@@ -44,4 +48,6 @@ export function logConfigSummary(logger: { info: (msg: string) => void }): void 
   logger.info(`  - REDIS_URL: ${sanitizedRedis}`);
   logger.info(`  - PROWLARR_URL: ${config.PROWLARR_URL}`);
   logger.info(`  - PROWLARR_API_KEY: ${sanitizedApiKey}`);
+  logger.info(`  - FLARESOLVERR_ENABLED: ${config.FLARESOLVERR_ENABLED}`);
+  logger.info(`  - FLARESOLVERR_URL: ${config.FLARESOLVERR_URL}`);
 }

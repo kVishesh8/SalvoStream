@@ -1,8 +1,9 @@
 import { FastifyInstance, FastifyPluginAsync } from "fastify";
 import { HealthResponse } from "@salvostream/shared-types";
 import { formatUptime, formatBytes } from "@salvostream/shared-utils";
-import { checkDbHealth } from "../db/sqlite.js";
+import { checkDbHealth, getIndexerHealthStats } from "../db/sqlite.js";
 import { checkRedisHealth } from "../redis/client.js";
+import { config } from "../config/env.js";
 
 const startTime = Date.now();
 
@@ -10,6 +11,31 @@ const healthRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   fastify.get("/health", async (request, reply) => {
     const isRedisConnected = checkRedisHealth();
     const isSqliteConnected = checkDbHealth();
+
+    // 1. Check Prowlarr connectivity
+    let prowlarrConnected = false;
+    try {
+      const response = await fetch(`${config.PROWLARR_URL}/api/v1/system/status`, {
+        headers: { "X-Api-Key": config.PROWLARR_API_KEY }
+      });
+      prowlarrConnected = response.ok;
+    } catch {
+      prowlarrConnected = false;
+    }
+
+    // 2. Check FlareSolverr connectivity if enabled
+    let flaresolverrConnected = false;
+    if (config.FLARESOLVERR_ENABLED) {
+      try {
+        const response = await fetch(`${config.FLARESOLVERR_URL}/health`);
+        flaresolverrConnected = response.ok;
+      } catch {
+        flaresolverrConnected = false;
+      }
+    }
+
+    // 3. Fetch indexer health stats from SQLite
+    const indexers = getIndexerHealthStats();
 
     const uptimeSeconds = Math.floor((Date.now() - startTime) / 1000);
     const memory = process.memoryUsage();
@@ -25,6 +51,12 @@ const healthRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         heapTotal: formatBytes(memory.heapTotal),
         heapUsed: formatBytes(memory.heapUsed),
         external: formatBytes(memory.external)
+      },
+      trackers: {
+        flaresolverrEnabled: config.FLARESOLVERR_ENABLED,
+        flaresolverrConnected,
+        prowlarrConnected,
+        indexers
       },
       timestamp: new Date().toISOString()
     };

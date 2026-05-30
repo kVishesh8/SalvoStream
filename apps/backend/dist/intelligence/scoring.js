@@ -18,6 +18,7 @@ function calculateScore(parsed, lang, seeders) {
             codecBonus: 0,
             hdrBonus: 0,
             seederBonus: 0,
+            ottBonus: 0,
             isCam: parsed.sourceType === "CAM" || parsed.sourceType === "TeleSync"
         };
     }
@@ -130,8 +131,13 @@ function calculateScore(parsed, lang, seeders) {
         // Reward seeders as a fine-grained tiebreaker within the same tier (up to 1,000 points)
         seederBonus = Math.min(seeders, 1000);
     }
+    // 7b. OTT Release bonus (lightweight tie-breaker)
+    let ottBonus = 0;
+    if (parsed.ott && parsed.ott.length > 0) {
+        ottBonus = 500; // Small tie-breaker that slightly elevates OTT releases within the same tier
+    }
     // 8. Calculate total score
-    const score = baseScore + languageBonus + sourceBonus + codecBonus + hdrBonus + seederBonus;
+    const score = baseScore + languageBonus + sourceBonus + codecBonus + hdrBonus + seederBonus + ottBonus;
     return {
         score,
         qualityTier,
@@ -141,6 +147,7 @@ function calculateScore(parsed, lang, seeders) {
         codecBonus,
         hdrBonus,
         seederBonus,
+        ottBonus,
         isCam
     };
 }

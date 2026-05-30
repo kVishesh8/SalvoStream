@@ -5,6 +5,8 @@ export interface Config {
     NODE_ENV: string;
     PROWLARR_URL: string;
     PROWLARR_API_KEY: string;
+    FLARESOLVERR_ENABLED: boolean;
+    FLARESOLVERR_URL: string;
 }
 export declare const config: Config;
 export declare function logConfigSummary(logger: {

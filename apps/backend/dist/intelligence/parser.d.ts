@@ -11,6 +11,7 @@ export interface ParsedRelease {
     isAnime: boolean;
     animeFansubGroup: string;
     animeEpisode?: number;
+    ott: ("Netflix" | "AmazonPrime" | "DisneyHotstar" | "JioCinema")[];
 }
 /**
  * Parses a torrent title to extract structured metadata.

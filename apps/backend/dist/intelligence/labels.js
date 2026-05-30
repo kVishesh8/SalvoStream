@@ -40,24 +40,25 @@ function formatStreamName(parsed) {
  */
 function formatStreamTitle(rawTitle, parsed, lang, size, seeders, peers, indexer) {
     const badges = [];
-    // 1. Language marker (restrained emoji usage)
-    switch (lang.detectedLanguage) {
-        case "Hindi":
-            badges.push("🇮🇳 Hindi");
-            break;
-        case "Hindi Dubbed":
-            badges.push("🇮🇳 Hin-Dubbed");
-            break;
-        case "Dual Audio":
-            badges.push("🇮🇳 Hindi Dual");
-            break;
-        case "Multi Audio":
-            badges.push("🔊 Multi Audio");
-            break;
-        case "English":
-        default:
-            badges.push("🇬🇧 English");
-            break;
+    // 1. Ultra-compact, TV-friendly Language marker (Only when confidence is sufficient)
+    if (lang.confidence === "high" || lang.confidence === "medium") {
+        switch (lang.detectedLanguage) {
+            case "Hindi":
+                badges.push("🇮🇳 HIN");
+                break;
+            case "Hindi Dubbed":
+                badges.push("🇮🇳 DUB");
+                break;
+            case "Dual Audio":
+                badges.push("🌐 DUAL");
+                break;
+            case "Multi Audio":
+                badges.push("🌐 MULTI");
+                break;
+            case "English":
+                badges.push("🇬🇧 ENG");
+                break;
+        }
     }
     // 2. Resolution & Source Type
     if (parsed.resolution !== "unknown") {
@@ -66,7 +67,20 @@ function formatStreamTitle(rawTitle, parsed, lang, size, seeders, peers, indexer
     if (parsed.sourceType !== "unknown") {
         badges.push(parsed.sourceType);
     }
-    // 3. Format/Codec indicators
+    // 3. Compact OTT Platform Markers
+    if (parsed.ott && parsed.ott.length > 0) {
+        parsed.ott.forEach(platform => {
+            if (platform === "Netflix")
+                badges.push("NF");
+            else if (platform === "AmazonPrime")
+                badges.push("AMZN");
+            else if (platform === "DisneyHotstar")
+                badges.push("DSNP");
+            else if (platform === "JioCinema")
+                badges.push("JIO");
+        });
+    }
+    // 4. Format/Codec & Audio indicators
     if (parsed.dolbyVision) {
         badges.push("DV");
     }
@@ -76,11 +90,17 @@ function formatStreamTitle(rawTitle, parsed, lang, size, seeders, peers, indexer
     if (parsed.codec !== "unknown") {
         badges.push(parsed.codec);
     }
-    // 4. File Size (formatted cleanly)
+    if (parsed.audio && parsed.audio.includes("DDP")) {
+        badges.push("DDP");
+    }
+    else if (parsed.audio && parsed.audio.includes("Atmos")) {
+        badges.push("ATMOS");
+    }
+    // 5. File Size (formatted cleanly)
     if (size > 0) {
         badges.push((0, shared_utils_1.formatBytes)(size));
     }
-    // 5. Release Group (graceful fallback)
+    // 6. Release Group (graceful fallback)
     if (parsed.releaseGroup !== "unknown") {
         badges.push(parsed.releaseGroup);
     }
