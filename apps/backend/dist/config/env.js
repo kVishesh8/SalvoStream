@@ -55,7 +55,7 @@ function logConfigSummary(logger) {
     const sanitizedApiKey = exports.config.PROWLARR_API_KEY
         ? `${exports.config.PROWLARR_API_KEY.slice(0, 4)}****`
         : "not configured";
-    logger.info(`Configuration loaded:`);
+    logger.info("Configuration loaded:");
     logger.info(`  - NODE_ENV: ${exports.config.NODE_ENV}`);
     logger.info(`  - PORT: ${exports.config.PORT}`);
     logger.info(`  - SQLITE_PATH: ${exports.config.SQLITE_PATH}`);

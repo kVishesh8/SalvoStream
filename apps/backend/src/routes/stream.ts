@@ -2,7 +2,7 @@ import { FastifyInstance, FastifyPluginAsync } from "fastify";
 import { StremioStreamResponse } from "@salvostream/shared-types";
 import { ProwlarrClient } from "../prowlarr/client.js";
 import { fetchMetadata, parseStremioId, buildSearchQuery } from "../prowlarr/metadata.js";
-import { processAndRenderStreams } from "../prowlarr/processor.js";
+import { processAndRenderStreams } from "../intelligence/processor.js";
 
 interface StreamParams {
   type: string;

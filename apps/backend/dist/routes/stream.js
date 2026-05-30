@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const client_js_1 = require("../prowlarr/client.js");
 const metadata_js_1 = require("../prowlarr/metadata.js");
-const processor_js_1 = require("../prowlarr/processor.js");
+const processor_js_1 = require("../intelligence/processor.js");
 const streamRoutes = async (fastify) => {
     // Stremio streams lookup endpoint: GET /stream/:type/:id.json
     // Fastify route matches GET /stream/:type/:id (which handles both id and id.json)

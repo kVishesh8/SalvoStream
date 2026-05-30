@@ -1,5 +1,4 @@
 import * as dotenv from "dotenv";
-import * as path from "path";
 import {
   DEFAULT_PORT,
   DEFAULT_REDIS_URL,
@@ -38,7 +37,7 @@ export function logConfigSummary(logger: { info: (msg: string) => void }): void 
     ? `${config.PROWLARR_API_KEY.slice(0, 4)}****`
     : "not configured";
 
-  logger.info(`Configuration loaded:`);
+  logger.info("Configuration loaded:");
   logger.info(`  - NODE_ENV: ${config.NODE_ENV}`);
   logger.info(`  - PORT: ${config.PORT}`);
   logger.info(`  - SQLITE_PATH: ${config.SQLITE_PATH}`);
