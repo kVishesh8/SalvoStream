@@ -1,0 +1,26 @@
+{
+  "name": "salvostream-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=22.0.0 <23.0.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @salvostream/backend",
+    "build": "npm run build -w @salvostream/shared-types -w @salvostream/shared-constants -w @salvostream/shared-utils -w @salvostream/backend",
+    "start": "npm run start -w @salvostream/backend",
+    "lint": "eslint \"apps/**/*.ts\" \"packages/**/*.ts\"",
+    "format": "prettier --write \"**/*.{ts,js,json,md}\""
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "prettier": "^3.2.5",
+    "eslint": "^8.57.0",
+    "@typescript-eslint/parser": "^7.7.0",
+    "@typescript-eslint/eslint-plugin": "^7.7.0"
+  }
+}

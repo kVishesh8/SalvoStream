@@ -1,0 +1,26 @@
+{
+  "name": "@salvostream/backend",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/server.js",
+  "types": "./dist/server.d.ts",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "@salvostream/shared-types": "*",
+    "@salvostream/shared-constants": "*",
+    "@salvostream/shared-utils": "*",
+    "fastify": "^4.26.2",
+    "dotenv": "^16.4.5",
+    "better-sqlite3": "^11.0.0",
+    "ioredis": "^5.4.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.10",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.7.1"
+  }
+}

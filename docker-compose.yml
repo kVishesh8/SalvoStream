@@ -1,0 +1,71 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    container_name: salvostream-backend
+    ports:
+      - "${PORT:-3000}:3000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=3000
+      - SQLITE_PATH=/app/data/salvostream.db
+      - REDIS_URL=redis://redis:6379
+      - PROWLARR_URL=http://prowlarr:9696
+      - PROWLARR_API_KEY=${PROWLARR_API_KEY:-}
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - salvostream-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: salvostream-redis
+    volumes:
+      - redis_data:/data
+      - ./infrastructure/docker/redis.conf:/usr/local/etc/redis/redis.conf
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - salvostream-network
+
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:2.3.5
+    container_name: salvostream-prowlarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - prowlarr_config:/config
+    ports:
+      - "9696:9696"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9696/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - salvostream-network
+
+volumes:
+  redis_data:
+    driver: local
+  prowlarr_config:
+    driver: local
+
+networks:
+  salvostream-network:
+    driver: bridge

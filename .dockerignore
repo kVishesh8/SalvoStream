@@ -1,0 +1,16 @@
+node_modules/
+dist/
+build/
+data/
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+.env
+.env.*
+.git
+.gitignore
+.dockerignore
+README.md
+docs/
+npm-debug.log*
